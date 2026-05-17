@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tdd_example/core/di/di.dart';
 import 'package:tdd_example/core/router/routes.dart';
+import 'package:tdd_example/core/theme/theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'TDD example',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
+      theme: AppTheme.light,
       routerConfig: router.config(),
     );
   }
