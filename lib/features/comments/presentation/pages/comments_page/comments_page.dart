@@ -1,5 +1,9 @@
 import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
+import 'package:tdd_example/core/di/di.dart';
+import 'package:tdd_example/features/comments/presentation/cubits/comments_cubit/comments_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'widgets/widgets.dart';
 
 @RoutePage()
 class CommentsPage extends StatelessWidget {
@@ -7,9 +11,12 @@ class CommentsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(centerTitle: true, title: Text('Comments')),
-      body: Center(child: Text('$this qweqwe')),
+    return BlocProvider(
+      create: (context) => di<CommentsCubit>()..getComments(),
+      child: Scaffold(
+        appBar: AppBar(centerTitle: true, title: Text('Comments')),
+        body: WCommentsBody(),
+      ),
     );
   }
 }

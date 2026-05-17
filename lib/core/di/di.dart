@@ -3,11 +3,11 @@ import 'package:injectable/injectable.dart';
 
 import 'di.config.dart';
 
-final getIt = GetIt.instance;
+final di = GetIt.instance;
 
 @InjectableInit(
   initializerName: 'init', // default
   preferRelativeImports: true, // default
   asExtension: true, // default
 )
-void configureDependencies() => getIt.init();
+void configureDependencies() => di.init();
