@@ -40,7 +40,7 @@ class ErrorHelper {
 
   static String getErrorStr(dynamic e) {
     if (kDebugMode) {
-      print(StackTrace.current.toString());
+      debugPrint(StackTrace.current.toString());
     }
 
     if (e == null || e.toString().isEmpty) {

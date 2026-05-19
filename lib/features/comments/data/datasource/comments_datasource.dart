@@ -26,7 +26,7 @@ class CommentsDatasourceImpl implements CommentsDatasource {
     const path = '/comments';
     try {
       final response = await client.get(path);
-      final listData = response.data as List<dynamic>;
+      final listData = response.data as List;
       final result = listData.map((e) => CommentModel.fromJson(e)).toList();
       return Right(result);
     } catch (e) {
