@@ -31,14 +31,24 @@ class WCommentsBody extends StatelessWidget {
         }
 
         if (status.isSuccess) {
-          return ListView.separated(
-            padding: .all(16),
-            shrinkWrap: true,
-            itemBuilder: (_, i) {
-              return WCommentItem();
-            },
-            separatorBuilder: (_, i) => Divider(),
-            itemCount: 10,
+          final listComments = state.comments;
+          if (listComments.isEmpty) {
+            return Center(child: Text('No comments yet'));
+          }
+          return RefreshIndicator(
+            onRefresh: () async => cubit.refresh(),
+            backgroundColor: AppColors.cWhite,
+            color: AppColors.cBlueAccent,
+            child: ListView.separated(
+              padding: .all(16),
+              shrinkWrap: true,
+              itemBuilder: (_, i) {
+                final comment = listComments[i];
+                return WCommentItem(comment: comment);
+              },
+              separatorBuilder: (_, i) => Divider(),
+              itemCount: listComments.length,
+            ),
           );
         }
 

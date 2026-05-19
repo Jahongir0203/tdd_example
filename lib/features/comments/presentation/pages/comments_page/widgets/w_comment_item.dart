@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:tdd_example/core/theme/app_colors.dart';
 import 'package:tdd_example/core/theme/app_text_styles.dart';
+import 'package:tdd_example/features/comments/data/models/comment_model.dart';
 
 class WCommentItem extends StatefulWidget {
-  const WCommentItem({super.key});
+  const WCommentItem({super.key, required this.comment});
+
+  final CommentModel comment;
 
   @override
   State<WCommentItem> createState() => _WCommentItemState();
@@ -38,9 +41,9 @@ class _WCommentItemState extends State<WCommentItem> {
                   spacing: 4,
                   crossAxisAlignment: .start,
                   children: [
-                    Text('Johs Smith', style: AppTextStyles.size16Bold),
+                    Text(widget.comment.name, style: AppTextStyles.size16Bold),
                     Text(
-                      'Life is good',
+                      widget.comment.email,
                       style: AppTextStyles.size14Medium.copyWith(
                         color: AppColors.cGrey,
                       ),
@@ -56,7 +59,7 @@ class _WCommentItemState extends State<WCommentItem> {
             ],
           ),
           Text(
-            'laudantium enim quasi est quidem magnam voluptate ipsam eos tempora quo necessitatibus dolor quam autem quasi reiciendis et nam sapiente accusantium',
+            widget.comment.body,
             style: AppTextStyles.size14Regular.copyWith(
               color: AppColors.cBlack,
             ),

@@ -56,4 +56,6 @@ class DioClient {
 
     return dio;
   }
+
+  Future<void> clearCache() async => await _cacheOptions.store?.clean();
 }
