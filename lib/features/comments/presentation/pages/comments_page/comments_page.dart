@@ -15,6 +15,7 @@ class CommentsPage extends StatelessWidget {
       create: (context) => di<CommentsCubit>()..getComments(),
       child: Scaffold(
         appBar: AppBar(centerTitle: true, title: Text('Comments')),
+
         body: WCommentsBody(),
       ),
     );

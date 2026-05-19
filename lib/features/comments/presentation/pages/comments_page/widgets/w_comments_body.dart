@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tdd_example/core/helpers/app_toast.dart';
 import 'package:tdd_example/core/helpers/enum_helpers.dart';
 import 'package:tdd_example/core/theme/app_colors.dart';
 import 'package:tdd_example/core/theme/app_text_styles.dart';
@@ -11,8 +12,14 @@ class WCommentsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentsCubit, CommentsState>(
+    return BlocConsumer<CommentsCubit, CommentsState>(
       buildWhen: (p, c) => p.status != c.status,
+      listenWhen: (p, c) => p.status != c.status && c.status.isFail,
+      listener: (context, state) {
+        if (state.status.isFail) {
+          ToastHelper.error(state.error);
+        }
+      },
       builder: (BuildContext context, CommentsState state) {
         final cubit = context.read<CommentsCubit>();
         final status = state.status;

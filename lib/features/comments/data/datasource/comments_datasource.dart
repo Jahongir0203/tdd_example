@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
+import 'package:tdd_example/core/helpers/error_handler.dart';
 import 'package:tdd_example/core/network/dio_client.dart';
 import 'package:tdd_example/features/comments/data/models/comment_model.dart';
 
@@ -29,7 +30,7 @@ class CommentsDatasourceImpl implements CommentsDatasource {
       final result = listData.map((e) => CommentModel.fromJson(e)).toList();
       return Right(result);
     } catch (e) {
-      return Left(e);
+      return Left(getError(e));
     }
   }
 
