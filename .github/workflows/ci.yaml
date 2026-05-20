@@ -54,7 +54,13 @@ jobs:
       # 1.5 Kod formatlashni tekshirish
       # --set-exit-if-changed: format noto'g'ri bo'lsa CI fail bo'ladi
       - name: Check formatting
-        run: dart format --set-exit-if-changed --exclude="**/*.freezed.dart,**/*.g.dart" .
+        run: |
+          find . -name "*.dart" \
+            ! -name "*.freezed.dart" \
+            ! -name "*.g.dart" \
+            ! -path "*/build/*" \
+            ! -path "*/.dart_tool/*" \
+            | xargs dart format --set-exit-if-changed
 
       # 1.6 Barcha testlarni ishlatish + coverage hisoboti
       # --coverage: lcov.info fayl hosil qiladi
