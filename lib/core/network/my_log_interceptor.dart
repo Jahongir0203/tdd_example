@@ -9,25 +9,27 @@ class MyLogInterceptor extends Interceptor {
   static const _sensitive = ['password', 'token', 'secret', 'authorization'];
 
   @override
-  void onRequest(RequestOptions o, RequestInterceptorHandler h) {
-    log('▶ ${o.method} ${o.uri} | body:${_mask(o.data)}');
-    super.onRequest(o, h);
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    log('▶ ${options.method} ${options.uri} | body:${_mask(options.data)}');
+    super.onRequest(options, handler);
   }
 
   @override
-  void onResponse(Response r, ResponseInterceptorHandler h) {
-    log('✓ ${r.statusCode} ${r.requestOptions.uri} | body:${r.data}');
-    super.onResponse(r, h);
-  }
-
-  @override
-  void onError(DioException e, ErrorInterceptorHandler h) {
-    final isNoInternet = e.error is NoInternetException;
-    final label = isNoInternet ? '📵 NO_INTERNET' : '✗ ${e.type.name}';
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
     log(
-      '$label ${e.requestOptions.uri} | status:${e.response?.statusCode} | ${e.message}',
+      '✓ ${response.statusCode} ${response.requestOptions.uri} | body:${response.data}',
     );
-    super.onError(e, h);
+    super.onResponse(response, handler);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final isNoInternet = err.error is NoInternetException;
+    final label = isNoInternet ? '📵 NO_INTERNET' : '✗ ${err.type.name}';
+    log(
+      '$label ${err.requestOptions.uri} | status:${err.response?.statusCode} | ${err.message}',
+    );
+    super.onError(err, handler);
   }
 
   dynamic _mask(dynamic data) {

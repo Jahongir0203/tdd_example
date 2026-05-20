@@ -3,17 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tdd_example/features/comments/data/datasource/comments_datasource.dart';
 import 'package:tdd_example/features/comments/data/models/comment_model.dart';
-import 'package:tdd_example/features/comments/data/repository/comments_repository_impl.dart';
 
 class MockCommentsDatasource extends Mock implements CommentsDatasource {}
 
 void main() {
   late MockCommentsDatasource mockDatasource;
-  late CommentsRepositoryImpl repository;
+
 
   setUp(() {
     mockDatasource = MockCommentsDatasource();
-    repository = CommentsRepositoryImpl(mockDatasource);
   });
 
   final tComments = [
