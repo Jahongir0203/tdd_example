@@ -83,7 +83,7 @@ jobs:
   build_android:
     name: Build Android APK
     runs-on: ubuntu-latest
-    needs: test_and_analyze   # Test o'tsa build qiladi, o'tmasa — qilmaydi
+    needs: test_and_analyze
 
     steps:
       - name: Checkout code
@@ -96,7 +96,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Setup Java (Android build uchun kerak)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: "zulu"
@@ -105,13 +105,24 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Kod generatsiyasi kerak bo'lsa (freezed, injectable, auto_route)
-      # Bu loyihada kerak: di.config.dart, *.freezed.dart, *.gr.dart va boshqalar
       - name: Generate code (build_runner)
         run: dart run build_runner build --delete-conflicting-outputs
 
-      # --dart-define orqali environment o'zgaruvchilarini kiritamiz
-      # GitHub Secrets dan olinadi — keyinroq sozlaymiz
+      # ✅ Keystore — GitHub Secret dan decode qilish
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/keystore.jks
+
+      # ✅ key.properties — Secret lardan dinamik yaratish
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=../keystore.jks
+          EOF
+
       - name: Build APK (debug)
         run: |
           flutter build apk \
@@ -119,7 +130,6 @@ jobs:
             --dart-define=BASE_URL=${{ secrets.BASE_URL }} \
             --dart-define=DEV_MODE=true
 
-      # Yaratilgan APK ni artifact sifatida saqlaymiz
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
