@@ -8,9 +8,9 @@ name: Flutter CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 # Bir xil branch uchun eski run ni bekor qiladi (qoʻshimcha runner tejash)
 concurrency:
@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
       # 1.4 Kod sifatini tekshirish (lint + tip xatolar)
       # flutter analyze = dart analyzer + flutter-specific rules
       - name: Run analyzer
@@ -51,7 +54,7 @@ jobs:
       # 1.5 Kod formatlashni tekshirish
       # --set-exit-if-changed: format noto'g'ri bo'lsa CI fail bo'ladi
       - name: Check formatting
-        run: dart format --set-exit-if-changed .
+        run: dart format --set-exit-if-changed --exclude="**/*.freezed.dart,**/*.g.dart" .
 
       # 1.6 Barcha testlarni ishlatish + coverage hisoboti
       # --coverage: lcov.info fayl hosil qiladi
