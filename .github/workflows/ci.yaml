@@ -1,0 +1,161 @@
+# ============================================================
+# CI Workflow — tdd_example Flutter loyihasi
+# Trigger: har qanday push yoki PR (main, develop)
+# Nima qiladi: pub get → analyze → format → test → build
+# ============================================================
+
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Bir xil branch uchun eski run ni bekor qiladi (qoʻshimcha runner tejash)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────
+  # 1. TEST + ANALYZE
+  # Ubuntu runner — Android build ham shu yerda
+  # ──────────────────────────────────────────────
+  test_and_analyze:
+    name: Test & Analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1.1 Kodni yuklab olish
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1.2 Flutter ni o'rnatish (pubspec.yaml dagi versiyaga mos)
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true                  # Flutter SDK ni cache'lash — tezroq
+
+      # 1.3 Barcha paketlarni yuklab olish
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 1.4 Kod sifatini tekshirish (lint + tip xatolar)
+      # flutter analyze = dart analyzer + flutter-specific rules
+      - name: Run analyzer
+        run: flutter analyze --fatal-infos
+
+      # 1.5 Kod formatlashni tekshirish
+      # --set-exit-if-changed: format noto'g'ri bo'lsa CI fail bo'ladi
+      - name: Check formatting
+        run: dart format --set-exit-if-changed .
+
+      # 1.6 Barcha testlarni ishlatish + coverage hisoboti
+      # --coverage: lcov.info fayl hosil qiladi
+      - name: Run tests
+        run: flutter test --coverage --reporter=expanded
+
+      # 1.7 Coverage hisobotini artifact sifatida saqlash
+      # (keyinroq Codecov yoki boshqa xizmat bilan bog'lash mumkin)
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/lcov.info
+          retention-days: 7
+
+  # ──────────────────────────────────────────────
+  # 2. ANDROID BUILD
+  # test_and_analyze muvaffaqiyatli bo'lgandan keyin ishga tushadi
+  # ──────────────────────────────────────────────
+  build_android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: test_and_analyze   # Test o'tsa build qiladi, o'tmasa — qilmaydi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Setup Java (Android build uchun kerak)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Kod generatsiyasi kerak bo'lsa (freezed, injectable, auto_route)
+      # Bu loyihada kerak: di.config.dart, *.freezed.dart, *.gr.dart va boshqalar
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # --dart-define orqali environment o'zgaruvchilarini kiritamiz
+      # GitHub Secrets dan olinadi — keyinroq sozlaymiz
+      - name: Build APK (debug)
+        run: |
+          flutter build apk \
+            --debug \
+            --dart-define=BASE_URL=${{ secrets.BASE_URL }} \
+            --dart-define=DEV_MODE=true
+
+      # Yaratilgan APK ni artifact sifatida saqlaymiz
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+
+  # ──────────────────────────────────────────────
+  # 3. iOS BUILD
+  # Faqat macOS runner da ishlaydi (Apple ekotizimi)
+  # ──────────────────────────────────────────────
+  build_ios:
+    name: Build iOS (no codesign)
+    runs-on: macos-latest
+    needs: test_and_analyze
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # --no-codesign: signing sertifikatsiz build (CI uchun etarli)
+      # Production IPA uchun CD workflow da codesign qilinadi
+      - name: Build iOS (no codesign)
+        run: |
+          flutter build ios \
+            --no-codesign \
+            --dart-define=BASE_URL=${{ secrets.BASE_URL }} \
+            --dart-define=DEV_MODE=true
+
+      - name: Upload iOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-no-codesign-build
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 7
