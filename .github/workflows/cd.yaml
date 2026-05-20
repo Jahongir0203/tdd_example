@@ -77,14 +77,43 @@ jobs:
             --dart-define=BASE_URL=${{ secrets.BASE_URL }} \
             --dart-define=DEV_MODE=false
 
-      # 9. Firebase App Distribution ga deploy
-      #    FIREBASE_APP_ID_ANDROID: Firebase Console → Project settings → Your apps
-      #    FIREBASE_TOKEN: firebase login:ci buyrug'i bilan olinadi
+      # ─────────────────────────────────────────
+      # FIX 1: "info.plist parse error" muammosi
+      # Sabab: FIREBASE_APP_ID_ANDROID secreti
+      # iOS App ID ni o'z ichiga olgan bo'lishi mumkin.
+      # Format tekshiruvi: 1:xxx:android:xxx bo'lishi kerak.
+      # ─────────────────────────────────────────
+
+      # 9. Debug: APK mavjudligini va App ID formatini tekshirish
+      - name: Debug — verify APK and App ID format
+        run: |
+          echo "=== APK check ==="
+          ls -lh build/app/outputs/flutter-apk/app-release.apk
+
+          echo "=== App ID prefix (first 20 chars) ==="
+          echo "${{ secrets.FIREBASE_APP_ID_ANDROID }}" | cut -c1-20
+
+          echo "=== App ID must contain ':android:' ==="
+          echo "${{ secrets.FIREBASE_APP_ID_ANDROID }}" | grep -q ":android:" \
+            && echo "✅ Android App ID confirmed" \
+            || echo "❌ ERROR: App ID does not contain ':android:' — check your secret!"
+
+      # ─────────────────────────────────────────
+      # FIX 2: FIREBASE_TOKEN deprecated →
+      # serviceCredentialsFileContent ishlatamiz
+      # (Service Account JSON, GitHub secret da saqlangan)
+      # Firebase Console → Project Settings →
+      # Service Accounts → Generate new private key
+      # → butun JSON ni FIREBASE_SERVICE_ACCOUNT_JSON ga joylashtiring
+      # ─────────────────────────────────────────
+
+      # 10. Firebase App Distribution ga deploy
       - name: Deploy to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
-          token: ${{ secrets.FIREBASE_TOKEN }}
+          # token o'rniga serviceCredentialsFileContent ishlatamiz (deprecated emas)
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           groups: testers
           file: build/app/outputs/flutter-apk/app-release.apk
           releaseNotes: |
