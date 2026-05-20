@@ -34,7 +34,9 @@ void main() {
         when(
           () => mockDatasource.getComments(cacheDuration: tDuration),
         ).thenAnswer((_) async => Right(tComments));
-        final result = await mockDatasource.getComments(cacheDuration: tDuration);
+        final result = await mockDatasource.getComments(
+          cacheDuration: tDuration,
+        );
         expect(result, equals(Right<dynamic, List<CommentModel>>(tComments)));
         verify(
           () => mockDatasource.getComments(cacheDuration: tDuration),

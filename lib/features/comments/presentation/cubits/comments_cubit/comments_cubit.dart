@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:injectable/injectable.dart';
-import 'package:tdd_example/core/helpers/app_toast.dart';
 import 'package:tdd_example/core/helpers/enum_helpers.dart';
 import 'package:tdd_example/features/comments/data/models/comment_model.dart';
 import 'package:tdd_example/features/comments/domain/repository/comments_repository.dart';
@@ -29,7 +28,7 @@ class CommentsCubit extends Cubit<CommentsState> {
     final result = await _commentsRepository.getComments(
       cacheDuration: _cacheDuration,
     );
-    
+
     result.fold(
       (l) => emit(state.copyWith(status: .fail, error: l)),
       (r) => emit(state.copyWith(status: .success, comments: r)),

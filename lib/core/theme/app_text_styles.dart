@@ -13,7 +13,6 @@ sealed class AppTextStyles {
     fontWeight: .w400,
   );
 
-
   static const size14Medium = TextStyle(
     fontSize: 14,
     color: _defaultColor,
