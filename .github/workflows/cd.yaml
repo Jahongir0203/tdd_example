@@ -1,0 +1,173 @@
+# ============================================================
+# CD Workflow — tdd_example Flutter loyihasi
+# Trigger: faqat main branch ga merge bo'lganda (release)
+# Nima qiladi: sign → build release APK → Firebase Dist. deploy
+# ============================================================
+
+name: Flutter CD
+
+on:
+  push:
+    branches: [main]    # Faqat main ga merge bo'lganda ishga tushadi
+  workflow_dispatch:    # Qo'lda ham ishga tushirish mumkin (GitHub UI dan)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────
+  # ANDROID RELEASE + FIREBASE APP DISTRIBUTION
+  # ──────────────────────────────────────────────
+  deploy_android:
+    name: Deploy Android → Firebase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Keystore faylini GitHub Secret dan dekod qilamiz
+      # Keystore ni base64 ga aylantirib Secret ga qo'shgan bo'lasan
+      # Buyruq: base64 -i keystore.jks | pbcopy  (macOS da)
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/keystore.jks
+
+      # key.properties faylini dinamik yaratamiz
+      # Bu fayl android/app/build.gradle tomonidan o'qiladi
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=../keystore.jks
+          EOF
+
+      # Release APK yoki AAB build qilamiz
+      # Play Store uchun --release --target-platform android-arm64 appbundle
+      - name: Build release APK
+        run: |
+          flutter build apk \
+            --release \
+            --dart-define=BASE_URL=${{ secrets.BASE_URL }} \
+            --dart-define=DEV_MODE=false
+
+      # Firebase App Distribution ga deploy
+      # FIREBASE_APP_ID: Firebase Console > Project Settings > Your Apps
+      # FIREBASE_TOKEN: firebase login:ci buyrug'i bilan olinadi
+      - name: Deploy to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
+          token: ${{ secrets.FIREBASE_TOKEN }}
+          groups: testers                        # Firebase da yaratilgan tester guruh
+          file: build/app/outputs/flutter-apk/app-release.apk
+          releaseNotes: |
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Message: ${{ github.event.head_commit.message }}
+
+  # ──────────────────────────────────────────────
+  # iOS RELEASE + FIREBASE APP DISTRIBUTION
+  # TestFlight uchun ham shu pattern ishlatiladi
+  # ──────────────────────────────────────────────
+  deploy_ios:
+    name: Deploy iOS → Firebase
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.5"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Apple Developer sertifikatlarini o'rnatish
+      # Keychain ga import qilinadi — Xcode shu yerdan oladi
+      - name: Install Apple certificate and profile
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Sertifikat va provisioning profile fayllarini yaratish
+          CERT_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+          # Vaqtinchalik keychain yaratish
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Sertifikatni import qilish
+          security import $CERT_PATH -P "$P12_PASSWORD" -A \
+            -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Provisioning profile o'rnatish
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      - name: Build iOS IPA
+        run: |
+          flutter build ipa \
+            --release \
+            --export-options-plist=ios/ExportOptions.plist \
+            --dart-define=BASE_URL=${{ secrets.BASE_URL }} \
+            --dart-define=DEV_MODE=false
+
+      - name: Deploy to Firebase App Distribution (iOS)
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID_IOS }}
+          token: ${{ secrets.FIREBASE_TOKEN }}
+          groups: testers
+          file: build/ios/ipa/*.ipa
+          releaseNotes: |
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Message: ${{ github.event.head_commit.message }}
+
+      # Cleanup: keychain ni o'chirish (security uchun)
+      - name: Clean up keychain
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db

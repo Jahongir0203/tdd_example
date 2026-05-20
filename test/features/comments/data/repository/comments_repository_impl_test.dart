@@ -9,7 +9,6 @@ class MockCommentsDatasource extends Mock implements CommentsDatasource {}
 void main() {
   late MockCommentsDatasource mockDatasource;
 
-
   setUp(() {
     mockDatasource = MockCommentsDatasource();
   });
