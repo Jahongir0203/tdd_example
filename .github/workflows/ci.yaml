@@ -123,10 +123,10 @@ jobs:
           storeFile=../keystore.jks
           EOF
 
-      - name: Build APK (debug)
+      - name: Build APK (release)
         run: |
           flutter build apk \
-            --debug \
+            --release \
             --dart-define=BASE_URL=${{ secrets.BASE_URL }} \
             --dart-define=DEV_MODE=true
 
