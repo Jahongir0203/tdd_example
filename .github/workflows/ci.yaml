@@ -60,7 +60,7 @@ jobs:
             ! -name "*.g.dart" \
             ! -path "*/build/*" \
             ! -path "*/.dart_tool/*" \
-            | xargs dart format --set-exit-if-changed
+            | xargs dart format --output=none --set-exit-if-changed
 
       # 1.6 Barcha testlarni ishlatish + coverage hisoboti
       # --coverage: lcov.info fayl hosil qiladi

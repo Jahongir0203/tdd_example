@@ -24,7 +24,11 @@ final tComment = CommentModel(
   body: 'Test body text',
 );
 
-final tComments = [tComment, tComment.copyWith(id: 2), tComment.copyWith(id: 3)];
+final tComments = [
+  tComment,
+  tComment.copyWith(id: 2),
+  tComment.copyWith(id: 3),
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -60,7 +64,7 @@ void main() {
   Completer<Either<dynamic, List<CommentModel>>> pendingCompleter() {
     final completer = Completer<Either<dynamic, List<CommentModel>>>();
     when(
-          () => mockRepository.getComments(
+      () => mockRepository.getComments(
         cacheDuration: any(named: 'cacheDuration'),
       ),
     ).thenAnswer((_) => completer.future);
@@ -70,7 +74,7 @@ void main() {
   // Success mock: darhol Right(comments) qaytaradi.
   void mockSuccess(List<CommentModel> comments) {
     when(
-          () => mockRepository.getComments(
+      () => mockRepository.getComments(
         cacheDuration: any(named: 'cacheDuration'),
       ),
     ).thenAnswer((_) async => Right(comments));
@@ -79,7 +83,7 @@ void main() {
   // Error mock: darhol Left(failure) qaytaradi.
   void mockFailure(String message) {
     when(
-          () => mockRepository.getComments(
+      () => mockRepository.getComments(
         cacheDuration: any(named: 'cacheDuration'),
       ),
     ).thenAnswer((_) async => Left(message));
@@ -90,49 +94,47 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group('CommentsPage — loading holati', () {
-    testWidgets(
-      "getComments loading bo'lsa Skeleton ko'rinishi kerak",
-          (tester) async {
-        // ARRANGE
-        // Completer ishlatamiz: future hech qachon resolve bo'lmaydi →
-        // Cubit loading state'da "qotib" qoladi.
-        final completer = pendingCompleter();
+    testWidgets("getComments loading bo'lsa Skeleton ko'rinishi kerak", (
+      tester,
+    ) async {
+      // ARRANGE
+      // Completer ishlatamiz: future hech qachon resolve bo'lmaydi →
+      // Cubit loading state'da "qotib" qoladi.
+      final completer = pendingCompleter();
 
-        // ACT
-        await tester.pumpWidget(buildSubject());
+      // ACT
+      await tester.pumpWidget(buildSubject());
 
-        // pump(Duration.zero): bir frame render qilamiz.
-        // pumpAndSettle() ishlatmaymiz — u barcha animatsiya/future tugashini
-        // kutadi, loading holatini o'tkazib yuboradi.
-        await tester.pump();
+      // pump(Duration.zero): bir frame render qilamiz.
+      // pumpAndSettle() ishlatmaymiz — u barcha animatsiya/future tugashini
+      // kutadi, loading holatini o'tkazib yuboradi.
+      await tester.pump();
 
-        // ASSERT
-        expect(
-          find.byType(WCommentSkeletonizerItem),
-          findsWidgets, // kamida 1 ta bo'lsa kifoya
-        );
-        expect(find.byType(WCommentItem), findsNothing);
+      // ASSERT
+      expect(
+        find.byType(WCommentSkeletonizerItem),
+        findsWidgets, // kamida 1 ta bo'lsa kifoya
+      );
+      expect(find.byType(WCommentItem), findsNothing);
 
-        // Cleanup: test leak bo'lmasin deb future'ni yopamiz.
-        completer.complete(Right([]));
-        await tester.pumpAndSettle();
-      },
-    );
+      // Cleanup: test leak bo'lmasin deb future'ni yopamiz.
+      completer.complete(Right([]));
+      await tester.pumpAndSettle();
+    });
 
-    testWidgets(
-      "loading paytda WCommentItem ko'rinmasligi kerak",
-          (tester) async {
-        final completer = pendingCompleter();
+    testWidgets("loading paytda WCommentItem ko'rinmasligi kerak", (
+      tester,
+    ) async {
+      final completer = pendingCompleter();
 
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
 
-        expect(find.byType(WCommentItem), findsNothing);
+      expect(find.byType(WCommentItem), findsNothing);
 
-        completer.complete(Right([]));
-        await tester.pumpAndSettle();
-      },
-    );
+      completer.complete(Right([]));
+      await tester.pumpAndSettle();
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -140,46 +142,42 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group("CommentsPage — success holati", () {
-    testWidgets(
-      "getComments success bo'lsa comment list ko'rinishi kerak",
-          (tester) async {
-        // ARRANGE
-        mockSuccess(tComments);
+    testWidgets("getComments success bo'lsa comment list ko'rinishi kerak", (
+      tester,
+    ) async {
+      // ARRANGE
+      mockSuccess(tComments);
 
-        // ACT
-        await tester.pumpWidget(buildSubject());
+      // ACT
+      await tester.pumpWidget(buildSubject());
 
-        // pumpAndSettle: barcha async operatsiyalar (future, animation)
-        // tugaguncha kutadi. Success state uchun ishlatamiz.
-        await tester.pumpAndSettle();
+      // pumpAndSettle: barcha async operatsiyalar (future, animation)
+      // tugaguncha kutadi. Success state uchun ishlatamiz.
+      await tester.pumpAndSettle();
 
-        // ASSERT
-        // tComments.length ta WCommentItem bo'lishi kerak
-        expect(find.byType(WCommentItem), findsNWidgets(tComments.length));
-        expect(find.byType(WCommentSkeletonizerItem), findsNothing);
-      },
-    );
+      // ASSERT
+      // tComments.length ta WCommentItem bo'lishi kerak
+      expect(find.byType(WCommentItem), findsNWidgets(tComments.length));
+      expect(find.byType(WCommentSkeletonizerItem), findsNothing);
+    });
 
-    testWidgets(
-      "comment contentlari to'g'ri ko'rinishi kerak",
-          (tester) async {
-        // ARRANGE
-        mockSuccess([tComment]);
+    testWidgets("comment contentlari to'g'ri ko'rinishi kerak", (tester) async {
+      // ARRANGE
+      mockSuccess([tComment]);
 
-        // ACT
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+      // ACT
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        // ASSERT: comment ma'lumotlari UI da ko'rinishi kerak
-        expect(find.text(tComment.name), findsOneWidget);
-        expect(find.text(tComment.email), findsOneWidget);
-        expect(find.text(tComment.body), findsOneWidget);
-      },
-    );
+      // ASSERT: comment ma'lumotlari UI da ko'rinishi kerak
+      expect(find.text(tComment.name), findsOneWidget);
+      expect(find.text(tComment.email), findsOneWidget);
+      expect(find.text(tComment.body), findsOneWidget);
+    });
 
     testWidgets(
       "comments bo'sh list bo'lsa 'No comments yet' ko'rinishi kerak",
-          (tester) async {
+      (tester) async {
         // ARRANGE
         mockSuccess([]); // Empty list
 
@@ -199,38 +197,34 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group("CommentsPage — error holati", () {
-    testWidgets(
-      "getComments fail bo'lsa error icon ko'rinishi kerak",
-          (tester) async {
-        // ARRANGE
-        mockFailure('Server xatosi');
+    testWidgets("getComments fail bo'lsa error icon ko'rinishi kerak", (
+      tester,
+    ) async {
+      // ARRANGE
+      mockFailure('Server xatosi');
 
-        // ACT
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+      // ACT
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        // ASSERT
-        expect(find.byIcon(Icons.error), findsOneWidget);
-        expect(find.byType(WCommentItem), findsNothing);
-        expect(find.byType(WCommentSkeletonizerItem), findsNothing);
-      },
-    );
+      // ASSERT
+      expect(find.byIcon(Icons.error), findsOneWidget);
+      expect(find.byType(WCommentItem), findsNothing);
+      expect(find.byType(WCommentSkeletonizerItem), findsNothing);
+    });
 
-    testWidgets(
-      "error message to'g'ri ko'rinishi kerak",
-          (tester) async {
-        // ARRANGE
-        const errorMessage = 'Server xatosi';
-        mockFailure(errorMessage);
+    testWidgets("error message to'g'ri ko'rinishi kerak", (tester) async {
+      // ARRANGE
+      const errorMessage = 'Server xatosi';
+      mockFailure(errorMessage);
 
-        // ACT
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+      // ACT
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        // ASSERT
-        expect(find.text(errorMessage), findsOneWidget);
-      },
-    );
+      // ASSERT
+      expect(find.text(errorMessage), findsOneWidget);
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -239,23 +233,26 @@ void main() {
   group("CommentsPage - refresh holati", () {
     testWidgets(
       "pull-to-refresh qilinsa getComments qayta chaqirilishi kerak",
-          (tester) async {
+      (tester) async {
         // ARRANGE
-        when(() => mockRepository.clear()).thenAnswer((_) async {}); // ← QO'SHING
+        when(
+          () => mockRepository.clear(),
+        ).thenAnswer((_) async {}); // ← QO'SHING
         mockSuccess(tComments);
 
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
         // ACT
-        final cubit = tester.element(find.byType(WCommentsBody))
+        final cubit = tester
+            .element(find.byType(WCommentsBody))
             .read<CommentsCubit>();
         await cubit.refresh();
         await tester.pumpAndSettle();
 
         // ASSERT
         verify(
-              () => mockRepository.getComments(
+          () => mockRepository.getComments(
             cacheDuration: any(named: 'cacheDuration'),
           ),
         ).called(2);
