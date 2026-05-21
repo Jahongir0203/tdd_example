@@ -221,15 +221,6 @@ flutter test test/features/comments/presentation/cubits/comments_cubit_test.dart
 
 ---
 
-## 🔑 Keystore (Debug)
-
-```
-key_alias : tdd_example
-password  : 123456
-```
-
----
-
 ## 💡 Arxitektura Qarorlari
 
 - **`Either<L, R>`** — exception throw qilish o'rniga, xatolar `Left`, muvaffaqiyat `Right` sifatida qaytariladi. Cubit'da `result.fold(...)` bilan clean error handling.
